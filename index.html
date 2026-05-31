@@ -8,7 +8,7 @@
     <style>
         body { font-family: Arial, sans-serif; padding: 10px; background: #f4f4f9; margin: 0; }
         h2 { text-align: center; color: #333; }
-        #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 8px; overflow: hidden; }
+        #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 8px; overflow: hidden; background: white; }
         .table-container { margin-top: 20px; width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; background: white; text-align: left; }
         th, td { padding: 12px; border-bottom: 1px solid #ddd; }
@@ -23,7 +23,7 @@
             border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer;
         }
         .export-btn { background: #28a745; }
-        .clear-btn { background: #dc3545; } /* Rojo para advertir peligro */
+        .clear-btn { background: #dc3545; }
     </style>
 </head>
 <body>
@@ -51,14 +51,12 @@
     </div>
 
     <script>
-        // MEJORA: Intentar cargar datos previamente guardados en el celular. 
-        // Si no hay nada, empieza con un objeto vacío {}.
+        // Cargar datos previamente guardados en el celular
         let inventario = JSON.parse(localStorage.getItem("inventario_celular")) || {};
-        
         let ultimoCodigo = "";
         let tiempoUltimoEscaneo = 0;
 
-        // Al cargar la página, si ya había datos guardados, mostramos la tabla de inmediato
+        // Mostrar la tabla si ya hay datos guardados al cargar la página
         document.addEventListener("DOMContentLoaded", () => {
             actualizarTabla();
         });
@@ -88,6 +86,7 @@
         function onScanSuccess(decodedText, decodedResult) {
             let tiempoActual = new Date().getTime();
             
+            // Pausa para evitar leer el mismo código repetidamente
             if (decodedText === ultimoCodigo && (tiempoActual - tiempoUltimoEscaneo) < 2500) {
                 return;
             }
@@ -97,26 +96,29 @@
 
             sonarBeep();
 
-            let inputCantidad = prompt(`Código detectado:\n${decodedText}\n\nIngrese la cantidad a registrar:`, "1");
+            // Pequeño retraso para evitar que el 'prompt' congele el video de la cámara
+            setTimeout(() => {
+                let inputCantidad = prompt(`Código detectado:\n${decodedText}\n\nIngrese la cantidad a registrar:`, "1");
 
-            if (inputCantidad === null || inputCantidad.trim() === "") {
-                return;
-            }
+                if (inputCantidad === null || inputCantidad.trim() === "") {
+                    return;
+                }
 
-            let cantidad = parseInt(inputCantidad, 10);
+                let cantidad = parseInt(inputCantidad, 10);
 
-            if (isNaN(cantidad) || cantidad <= 0) {
-                alert("Cantidad no válida. El código no fue registrado.");
-                return;
-            }
+                if (isNaN(cantidad) || cantidad <= 0) {
+                    alert("Cantidad no válida. El código no fue registrado.");
+                    return;
+                }
 
-            if (inventario[decodedText]) {
-                inventario[decodedText] += cantidad;
-            } else {
-                inventario[decodedText] = cantidad;
-            }
+                if (inventario[decodedText]) {
+                    inventario[decodedText] += cantidad;
+                } else {
+                    inventario[decodedText] = cantidad;
+                }
 
-            actualizarTabla();
+                actualizarTabla();
+            }, 100);
         }
 
         // Actualizar la vista de la tabla y guardar en LocalStorage
@@ -141,10 +143,9 @@
                 tbody.appendChild(fila);
             }
 
-            // MEJORA: Guardar los datos actualizados en la memoria interna del celular
+            // Guardar los datos en la memoria interna
             localStorage.setItem("inventario_celular", JSON.stringify(inventario));
 
-            // Mostrar u ocultar botones según si hay datos o no
             if (tieneDatos) {
                 document.getElementById("btnExportar").style.display = "block";
                 document.getElementById("btnLimpiar").style.display = "block";
@@ -154,7 +155,7 @@
             }
         }
 
-        // MEJORA: Función para borrar la memoria interna cuando quieras empezar de cero
+        // Función para borrar la memoria interna
         function limpiarInventario() {
             if (confirm("⚠️ ¿Estás seguro de que deseas borrar TODO el inventario guardado en este celular? Esta acción no se puede deshacer.")) {
                 inventario = {};
@@ -173,4 +174,31 @@
                 tablaHtml += `<tr><td style="mso-number-format:'\\@';">${codigo}</td><td>${inventario[codigo]}</td></tr>`;
             }
             
-            tabla
+            tablaHtml += `</table></body></html>`;
+
+            let blob = new Blob(['\ufeff', tablaHtml], { type: 'application/vnd.ms-excel' });
+            let url = URL.createObjectURL(blob);
+            
+            let a = document.createElement('a');
+            a.href = url;
+            
+            let fecha = new Date().toISOString().slice(0, 10);
+            a.download = `inventario_${fecha}.xls`;
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Iniciar el escáner
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { fps: 10, qrbox: {width: 250, height: 150} }, 
+            false
+        );
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+
+</body>
+</html>
