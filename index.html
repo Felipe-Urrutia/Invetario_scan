@@ -3,14 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mi Escáner Pro (Manual y Edición)</title>
+    <title>Mi Escáner Pro (PWA y Modales)</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#343a40">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: Arial, sans-serif; padding: 10px; background: #f4f4f9; margin: 0; }
         h2 { text-align: center; color: #333; }
         #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 8px; overflow: hidden; background: white; }
         
-        /* Estilos para el ingreso manual */
         .manual-container { 
             margin-top: 15px; padding: 15px; background: white; 
             border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -31,7 +37,6 @@
         th, td { padding: 12px; border-bottom: 1px solid #ddd; }
         th { background-color: #343a40; color: white; }
         
-        /* Botones de acción en la tabla */
         .action-btn { 
             background: none; border: none; font-size: 18px; 
             cursor: pointer; margin: 0 5px; padding: 5px;
@@ -45,6 +50,37 @@
         }
         .export-btn { background: #28a745; }
         .clear-btn { background: #dc3545; }
+
+        /* =========================================
+           ESTILOS PARA LOS MODALES PERSONALIZADOS
+           ========================================= */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: none; 
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 10px;
+            width: 85%; max-width: 350px; text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 { margin-top: 0; color: #333; font-size: 20px; }
+        .modal-content p { color: #555; font-size: 16px; margin-bottom: 20px; white-space: pre-wrap; }
+        #modalInput {
+            width: 80%; padding: 12px; font-size: 18px; text-align: center;
+            margin-bottom: 20px; border: 2px solid #007bff; border-radius: 8px;
+            outline: none;
+        }
+        #modalInput:focus { border-color: #0056b3; }
+        .modal-buttons { display: flex; justify-content: space-between; gap: 10px; }
+        .btn-modal {
+            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .btn-cancel { background: #e0e0e0; color: #333; }
+        .btn-cancel:hover { background: #d0d0d0; }
+        .btn-confirm { background: #007bff; color: white; }
+        .btn-confirm:hover { background: #0056b3; }
     </style>
 </head>
 <body>
@@ -69,13 +105,25 @@
                 </tr>
             </thead>
             <tbody>
-                </tbody>
+            </tbody>
         </table>
     </div>
 
     <div class="btn-container">
         <button class="btn export-btn" id="btnExportar" onclick="exportarExcel()">Exportar a XLS</button>
         <button class="btn clear-btn" id="btnLimpiar" onclick="limpiarInventario()">Limpiar Todo el Inventario</button>
+    </div>
+
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modalTitle">Título</h3>
+            <p id="modalMessage">Mensaje</p>
+            <input type="number" id="modalInput" min="0">
+            <div class="modal-buttons">
+                <button id="btnModalCancel" class="btn-modal btn-cancel">Cancelar</button>
+                <button id="btnModalConfirm" class="btn-modal btn-confirm">Aceptar</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -87,6 +135,76 @@
             actualizarTabla();
         });
 
+        // ==========================================
+        // SISTEMA DE MODALES PERSONALIZADOS
+        // ==========================================
+        let isModalOpen = false;
+        let modalResolve = null;
+
+        function showModal({ title, message, type = 'alert', defaultValue = '' }) {
+            return new Promise((resolve) => {
+                isModalOpen = true; // Pausa el escáner de la cámara
+                
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalMessage').textContent = message;
+                
+                const input = document.getElementById('modalInput');
+                const btnCancel = document.getElementById('btnModalCancel');
+                
+                if (type === 'prompt') {
+                    input.style.display = 'inline-block';
+                    input.value = defaultValue;
+                } else {
+                    input.style.display = 'none';
+                }
+
+                if (type === 'alert') {
+                    btnCancel.style.display = 'none'; // Las alertas solo tienen "Aceptar"
+                } else {
+                    btnCancel.style.display = 'inline-block';
+                }
+
+                document.getElementById('customModal').style.display = 'flex';
+                
+                if (type === 'prompt') {
+                    setTimeout(() => input.focus(), 100);
+                }
+
+                modalResolve = resolve;
+            });
+        }
+
+        function closeModal(result) {
+            document.getElementById('customModal').style.display = 'none';
+            isModalOpen = false; // Reactiva el escáner
+            if (modalResolve) {
+                modalResolve(result);
+                modalResolve = null;
+            }
+        }
+
+        document.getElementById('btnModalCancel').onclick = () => closeModal(null);
+        document.getElementById('btnModalConfirm').onclick = () => {
+            const input = document.getElementById('modalInput');
+            if (input.style.display === 'inline-block') {
+                closeModal(input.value);
+            } else {
+                closeModal(true);
+            }
+        };
+
+        // Permite presionar "Enter" para confirmar en el input
+        document.getElementById('modalInput').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                document.getElementById('btnModalConfirm').click();
+            }
+        });
+
+
+        // ==========================================
+        // LÓGICA DE LA APLICACIÓN (Refactorizada con Modales)
+        // ==========================================
         function sonarBeep() {
             try {
                 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -107,55 +225,56 @@
             }
         }
 
-        function onScanSuccess(decodedText, decodedResult) {
+        async function onScanSuccess(decodedText, decodedResult) {
+            if (isModalOpen) return; // Ignora escaneos si hay un modal en pantalla
+
             let tiempoActual = new Date().getTime();
-            
             if (decodedText === ultimoCodigo && (tiempoActual - tiempoUltimoEscaneo) < 2500) {
                 return;
             }
 
             ultimoCodigo = decodedText;
             tiempoUltimoEscaneo = tiempoActual;
-
             sonarBeep();
 
-            setTimeout(() => {
-                let inputCantidad = prompt(`Código detectado:\n${decodedText}\n\nIngrese la cantidad a registrar:`, "1");
+            // Usamos await para esperar la respuesta del usuario
+            let inputCantidad = await showModal({
+                title: "¡Código Detectado!",
+                message: `${decodedText}\n\nIngrese la cantidad a registrar:`,
+                type: "prompt",
+                defaultValue: "1"
+            });
 
-                if (inputCantidad === null || inputCantidad.trim() === "") return;
+            if (inputCantidad === null || inputCantidad.toString().trim() === "") return;
 
-                let cantidad = parseInt(inputCantidad, 10);
-                if (isNaN(cantidad) || cantidad <= 0) {
-                    alert("Cantidad no válida.");
-                    return;
-                }
+            let cantidad = parseInt(inputCantidad, 10);
+            if (isNaN(cantidad) || cantidad <= 0) {
+                await showModal({ title: "Error", message: "Cantidad no válida.", type: "alert" });
+                return;
+            }
 
-                registrarProducto(decodedText, cantidad);
-            }, 100);
+            registrarProducto(decodedText, cantidad);
         }
 
-        // SECCIÓN NUEVA: Lógica de ingreso manual
-        function agregarManual() {
+        async function agregarManual() {
             let codigoInput = document.getElementById("inputCodigo").value.trim();
             let cantidadInput = parseInt(document.getElementById("inputCantidad").value, 10);
 
             if (codigoInput === "") {
-                alert("Por favor, ingresa un código.");
+                await showModal({ title: "Atención", message: "Por favor, ingresa un código.", type: "alert" });
                 return;
             }
             if (isNaN(cantidadInput) || cantidadInput <= 0) {
-                alert("Cantidad no válida.");
+                await showModal({ title: "Error", message: "Cantidad no válida.", type: "alert" });
                 return;
             }
 
             registrarProducto(codigoInput, cantidadInput);
             
-            // Limpiar los campos después de agregar
             document.getElementById("inputCodigo").value = "";
             document.getElementById("inputCantidad").value = "1";
         }
 
-        // Función unificada para guardar tanto de cámara como manual
         function registrarProducto(codigo, cantidad) {
             if (inventario[codigo]) {
                 inventario[codigo] += cantidad;
@@ -165,37 +284,46 @@
             actualizarTabla();
         }
 
-        // SECCIÓN NUEVA: Lógica para editar cantidad
-        function editarCantidad(codigo) {
+        async function editarCantidad(codigo) {
             let cantidadActual = inventario[codigo];
-            let nuevaCantidad = prompt(`Editando cantidad para el código: ${codigo}\n\nIngresa la nueva cantidad total (o escribe 0 para eliminar):`, cantidadActual);
+            let nuevaCantidad = await showModal({
+                title: "Editar Cantidad",
+                message: `Editando código: ${codigo}\nIngresa la nueva cantidad (0 para eliminar):`,
+                type: "prompt",
+                defaultValue: cantidadActual
+            });
             
-            if (nuevaCantidad === null || nuevaCantidad.trim() === "") return;
+            if (nuevaCantidad === null || nuevaCantidad.toString().trim() === "") return;
 
             let cantidadParsed = parseInt(nuevaCantidad, 10);
             
             if (isNaN(cantidadParsed) || cantidadParsed < 0) {
-                alert("Cantidad no válida.");
+                await showModal({ title: "Error", message: "Cantidad no válida.", type: "alert" });
                 return;
             }
 
             if (cantidadParsed === 0) {
-                eliminarProducto(codigo);
+                delete inventario[codigo];
+                actualizarTabla();
             } else {
                 inventario[codigo] = cantidadParsed;
                 actualizarTabla();
             }
         }
 
-        // SECCIÓN NUEVA: Lógica para eliminar una fila
-        function eliminarProducto(codigo) {
-            if (confirm(`¿Estás seguro de eliminar el código ${codigo} del inventario?`)) {
+        async function eliminarProducto(codigo) {
+            let confirmado = await showModal({
+                title: "Eliminar Registro",
+                message: `¿Estás seguro de eliminar el código ${codigo}?`,
+                type: "confirm"
+            });
+
+            if (confirmado) {
                 delete inventario[codigo];
                 actualizarTabla();
             }
         }
 
-        // Tabla actualizada con la nueva columna de acciones
         function actualizarTabla() {
             const tbody = document.querySelector("#scannedTable tbody");
             tbody.innerHTML = ""; 
@@ -212,10 +340,9 @@
                 let celdaCantidad = document.createElement("td");
                 celdaCantidad.textContent = inventario[codigo];
                 
-                // Celda de botones (Editar y Eliminar)
                 let celdaAcciones = document.createElement("td");
                 celdaAcciones.style.textAlign = "center";
-                celdaAcciones.style.whiteSpace = "nowrap"; // Evita que los botones salten de línea
+                celdaAcciones.style.whiteSpace = "nowrap"; 
                 
                 let btnEditar = document.createElement("button");
                 btnEditar.innerHTML = "✏️";
@@ -247,8 +374,14 @@
             }
         }
 
-        function limpiarInventario() {
-            if (confirm("⚠️ ¿Estás seguro de que deseas borrar TODO el inventario guardado en este celular? Esta acción no se puede deshacer.")) {
+        async function limpiarInventario() {
+            let confirmado = await showModal({
+                title: "⚠️ Advertencia",
+                message: "¿Estás seguro de que deseas borrar TODO el inventario? Esta acción no se puede deshacer.",
+                type: "confirm"
+            });
+
+            if (confirmado) {
                 inventario = {};
                 localStorage.removeItem("inventario_celular");
                 actualizarTabla();
@@ -287,6 +420,15 @@
             false
         );
         html5QrcodeScanner.render(onScanSuccess);
+
+        // REGISTRO DEL SERVICE WORKER PARA LA PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((reg) => console.log('Service Worker registrado con éxito:', reg.scope))
+                    .catch((err) => console.log('Error al registrar el Service Worker:', err));
+            });
+        }
     </script>
 
 </body>

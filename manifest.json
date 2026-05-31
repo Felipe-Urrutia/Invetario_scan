@@ -1,0 +1,21 @@
+{
+  "short_name": "EscánerPro",
+  "name": "Mi Escáner de Inventario Pro",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "index.html",
+  "background_color": "#f4f4f9",
+  "theme_color": "#343a40",
+  "display": "standalone",
+  "orientation": "portrait"
+}
