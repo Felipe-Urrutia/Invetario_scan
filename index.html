@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mi Escáner</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 10px; background: #f4f4f9; margin: 0; }
+        h2 { text-align: center; color: #333; }
+        #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 8px; overflow: hidden; }
+        .table-container { margin-top: 20px; width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; text-align: left; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; }
+        th { background-color: #007bff; color: white; }
+        .export-btn { 
+            display: none; width: 100%; padding: 15px; margin-top: 20px; 
+            background: #28a745; color: white; border: none; 
+            border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Escáner de Inventario</h2>
+    
+    <div id="reader"></div>
+
+    <div class="table-container">
+        <table id="scannedTable">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Cantidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+
+    <button class="export-btn" id="btnExportar" onclick="exportarExcel()">Exportar a XLS</button>
+
+    <script>
+        let inventario = {};
+        let ultimoCodigo = "";
+        let tiempoUltimoEscaneo = 0;
+
+        // 1. Lógica del escáner
+        function onScanSuccess(decodedText, decodedResult) {
+            let tiempoActual = new Date().getTime();
+            
+            // Pausa de 2 segundos para evitar leer el mismo código repetidamente
+            if (decodedText === ultimoCodigo && (tiempoActual - tiempoUltimoEscaneo) < 2000) {
+                return;
+            }
+
+            ultimoCodigo = decodedText;
+            tiempoUltimoEscaneo = tiempoActual;
+
+            // Sumar al inventario
+            if (inventario[decodedText]) {
+                inventario[decodedText]++;
+            } else {
+                inventario[decodedText] = 1;
+            }
+
+            actualizarTabla();
+        }
+
+        // 2. Actualizar la vista de la tabla
+        function actualizarTabla() {
+            const tbody = document.querySelector("#scannedTable tbody");
+            tbody.innerHTML = ""; 
+            
+            let tieneDatos = false;
+
+            for (let codigo in inventario) {
+                tieneDatos = true;
+                let fila = document.createElement("tr");
+                
+                let celdaCodigo = document.createElement("td");
+                celdaCodigo.textContent = codigo;
+                
+                let celdaCantidad = document.createElement("td");
+                celdaCantidad.textContent = inventario[codigo];
+                
+                fila.appendChild(celdaCodigo);
+                fila.appendChild(celdaCantidad);
+                tbody.appendChild(fila);
+            }
+
+            // Mostrar el botón solo si hay datos escaneados
+            if (tieneDatos) {
+                document.getElementById("btnExportar").style.display = "block";
+            }
+        }
+
+        // 3. Generar y descargar el archivo XLS directamente desde el navegador
+        function exportarExcel() {
+            // Creamos la estructura HTML que Excel puede interpretar como hoja de cálculo
+            let tablaHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head><meta charset="utf-8"></head><body><table border="1">
+            <tr><th style="background-color:#007bff; color:white;">Código de Barra</th><th style="background-color:#007bff; color:white;">Cantidad</th></tr>`;
+            
+            for (let codigo in inventario) {
+                // El estilo mso-number-format:'\@'; obliga a Excel a tratar el código como texto puro (evita que borre los ceros a la izquierda)
+                tablaHtml += `<tr><td style="mso-number-format:'\\@';">${codigo}</td><td>${inventario[codigo]}</td></tr>`;
+            }
+            
+            tablaHtml += `</table></body></html>`;
+
+            // Creamos un "Blob" (un archivo en memoria)
+            let blob = new Blob(['\ufeff', tablaHtml], { type: 'application/vnd.ms-excel' });
+            let url = URL.createObjectURL(blob);
+            
+            // Creamos un enlace invisible, lo clicamos y lo destruimos
+            let a = document.createElement('a');
+            a.href = url;
+            
+            // Nombre del archivo con fecha
+            let fecha = new Date().toISOString().slice(0, 10);
+            a.download = `inventario_${fecha}.xls`;
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Iniciar el escáner
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { fps: 10, qrbox: {width: 250, height: 150} }, 
+            false
+        );
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+
+</body>
+</html>
