@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mi Escáner</title>
+    <title>Mi Escáner Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: Arial, sans-serif; padding: 10px; background: #f4f4f9; margin: 0; }
@@ -46,29 +46,71 @@
         let ultimoCodigo = "";
         let tiempoUltimoEscaneo = 0;
 
-        // 1. Lógica del escáner
+        // Función para generar el sonido "Beep" sintético
+        function sonarBeep() {
+            try {
+                let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let oscillator = audioCtx.createOscillator();
+                let gainNode = audioCtx.createGain();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // Tono de 800 Hz
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volumen al 10% para que no aturda
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.15); // Duración de 150 milisegundos
+            } catch (e) {
+                console.log("No se pudo reproducir el audio: ", e);
+            }
+        }
+
+        // Lógica del escáner
         function onScanSuccess(decodedText, decodedResult) {
             let tiempoActual = new Date().getTime();
             
-            // Pausa de 2 segundos para evitar leer el mismo código repetidamente
-            if (decodedText === ultimoCodigo && (tiempoActual - tiempoUltimoEscaneo) < 2000) {
+            // Pausa de 2.5 segundos para que la ventana emergente no se duplique al escanear
+            if (decodedText === ultimoCodigo && (tiempoActual - tiempoUltimoEscaneo) < 2500) {
                 return;
             }
 
             ultimoCodigo = decodedText;
             tiempoUltimoEscaneo = tiempoActual;
 
-            // Sumar al inventario
+            // 1. Suena el beep inmediatamente al detectar el código
+            sonarBeep();
+
+            // 2. Solicitar confirmación de la cantidad
+            // Sugiere el número 1 por defecto en la caja de texto
+            let inputCantidad = prompt(`Código detectado:\n${decodedText}\n\nIngrese la cantidad a registrar:`, "1");
+
+            // Si el usuario presiona "Cancelar" o deja vacío, ignoramos el escaneo
+            if (inputCantidad === null || inputCantidad.trim() === "") {
+                return;
+            }
+
+            // Convertimos la entrada a número entero
+            let cantidad = parseInt(inputCantidad, 10);
+
+            // Validamos que sea un número válido y mayor a cero
+            if (isNaN(cantidad) || cantidad <= 0) {
+                alert("Cantidad no válida. El código no fue registrado.");
+                return;
+            }
+
+            // Sumar al inventario la cantidad indicada
             if (inventario[decodedText]) {
-                inventario[decodedText]++;
+                inventario[decodedText] += cantidad;
             } else {
-                inventario[decodedText] = 1;
+                inventario[decodedText] = cantidad;
             }
 
             actualizarTabla();
         }
 
-        // 2. Actualizar la vista de la tabla
+        // Actualizar la vista de la tabla
         function actualizarTabla() {
             const tbody = document.querySelector("#scannedTable tbody");
             tbody.innerHTML = ""; 
@@ -90,35 +132,29 @@
                 tbody.appendChild(fila);
             }
 
-            // Mostrar el botón solo si hay datos escaneados
             if (tieneDatos) {
                 document.getElementById("btnExportar").style.display = "block";
             }
         }
 
-        // 3. Generar y descargar el archivo XLS directamente desde el navegador
+        // Generar y descargar el archivo XLS
         function exportarExcel() {
-            // Creamos la estructura HTML que Excel puede interpretar como hoja de cálculo
             let tablaHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head><meta charset="utf-8"></head><body><table border="1">
             <tr><th style="background-color:#007bff; color:white;">Código de Barra</th><th style="background-color:#007bff; color:white;">Cantidad</th></tr>`;
             
             for (let codigo in inventario) {
-                // El estilo mso-number-format:'\@'; obliga a Excel a tratar el código como texto puro (evita que borre los ceros a la izquierda)
                 tablaHtml += `<tr><td style="mso-number-format:'\\@';">${codigo}</td><td>${inventario[codigo]}</td></tr>`;
             }
             
             tablaHtml += `</table></body></html>`;
 
-            // Creamos un "Blob" (un archivo en memoria)
             let blob = new Blob(['\ufeff', tablaHtml], { type: 'application/vnd.ms-excel' });
             let url = URL.createObjectURL(blob);
             
-            // Creamos un enlace invisible, lo clicamos y lo destruimos
             let a = document.createElement('a');
             a.href = url;
             
-            // Nombre del archivo con fecha
             let fecha = new Date().toISOString().slice(0, 10);
             a.download = `inventario_${fecha}.xls`;
             
