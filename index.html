@@ -3,20 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mi Escáner Pro (Auto-guardado)</title>
+    <title>Mi Escáner Pro (Manual y Edición)</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: Arial, sans-serif; padding: 10px; background: #f4f4f9; margin: 0; }
         h2 { text-align: center; color: #333; }
         #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 8px; overflow: hidden; background: white; }
+        
+        /* Estilos para el ingreso manual */
+        .manual-container { 
+            margin-top: 15px; padding: 15px; background: white; 
+            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+        }
+        .manual-container input { 
+            padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; 
+        }
+        #inputCodigo { flex-grow: 1; min-width: 120px; }
+        #inputCantidad { width: 60px; text-align: center; }
+        .btn-add { 
+            background: #007bff; color: white; border: none; 
+            padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px;
+        }
+
         .table-container { margin-top: 20px; width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; background: white; text-align: left; }
         th, td { padding: 12px; border-bottom: 1px solid #ddd; }
-        th { background-color: #007bff; color: white; }
+        th { background-color: #343a40; color: white; }
         
-        /* Contenedor de botones para que se vean bien juntos */
+        /* Botones de acción en la tabla */
+        .action-btn { 
+            background: none; border: none; font-size: 18px; 
+            cursor: pointer; margin: 0 5px; padding: 5px;
+        }
+        
         .btn-container { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        
         .btn { 
             display: none; width: 100%; padding: 15px; 
             color: white; border: none; box-sizing: border-box;
@@ -32,12 +53,19 @@
     
     <div id="reader"></div>
 
+    <div class="manual-container">
+        <input type="text" id="inputCodigo" placeholder="Código manual">
+        <input type="number" id="inputCantidad" placeholder="Cant." value="1" min="1">
+        <button class="btn-add" onclick="agregarManual()">Añadir</button>
+    </div>
+
     <div class="table-container">
         <table id="scannedTable">
             <thead>
                 <tr>
                     <th>Código</th>
-                    <th>Cantidad</th>
+                    <th>Cant.</th>
+                    <th style="text-align: center;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -51,17 +79,14 @@
     </div>
 
     <script>
-        // Cargar datos previamente guardados en el celular
         let inventario = JSON.parse(localStorage.getItem("inventario_celular")) || {};
         let ultimoCodigo = "";
         let tiempoUltimoEscaneo = 0;
 
-        // Mostrar la tabla si ya hay datos guardados al cargar la página
         document.addEventListener("DOMContentLoaded", () => {
             actualizarTabla();
         });
 
-        // Función para generar el sonido "Beep"
         function sonarBeep() {
             try {
                 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -82,11 +107,9 @@
             }
         }
 
-        // Lógica del escáner
         function onScanSuccess(decodedText, decodedResult) {
             let tiempoActual = new Date().getTime();
             
-            // Pausa para evitar leer el mismo código repetidamente
             if (decodedText === ultimoCodigo && (tiempoActual - tiempoUltimoEscaneo) < 2500) {
                 return;
             }
@@ -96,32 +119,83 @@
 
             sonarBeep();
 
-            // Pequeño retraso para evitar que el 'prompt' congele el video de la cámara
             setTimeout(() => {
                 let inputCantidad = prompt(`Código detectado:\n${decodedText}\n\nIngrese la cantidad a registrar:`, "1");
 
-                if (inputCantidad === null || inputCantidad.trim() === "") {
-                    return;
-                }
+                if (inputCantidad === null || inputCantidad.trim() === "") return;
 
                 let cantidad = parseInt(inputCantidad, 10);
-
                 if (isNaN(cantidad) || cantidad <= 0) {
-                    alert("Cantidad no válida. El código no fue registrado.");
+                    alert("Cantidad no válida.");
                     return;
                 }
 
-                if (inventario[decodedText]) {
-                    inventario[decodedText] += cantidad;
-                } else {
-                    inventario[decodedText] = cantidad;
-                }
-
-                actualizarTabla();
+                registrarProducto(decodedText, cantidad);
             }, 100);
         }
 
-        // Actualizar la vista de la tabla y guardar en LocalStorage
+        // SECCIÓN NUEVA: Lógica de ingreso manual
+        function agregarManual() {
+            let codigoInput = document.getElementById("inputCodigo").value.trim();
+            let cantidadInput = parseInt(document.getElementById("inputCantidad").value, 10);
+
+            if (codigoInput === "") {
+                alert("Por favor, ingresa un código.");
+                return;
+            }
+            if (isNaN(cantidadInput) || cantidadInput <= 0) {
+                alert("Cantidad no válida.");
+                return;
+            }
+
+            registrarProducto(codigoInput, cantidadInput);
+            
+            // Limpiar los campos después de agregar
+            document.getElementById("inputCodigo").value = "";
+            document.getElementById("inputCantidad").value = "1";
+        }
+
+        // Función unificada para guardar tanto de cámara como manual
+        function registrarProducto(codigo, cantidad) {
+            if (inventario[codigo]) {
+                inventario[codigo] += cantidad;
+            } else {
+                inventario[codigo] = cantidad;
+            }
+            actualizarTabla();
+        }
+
+        // SECCIÓN NUEVA: Lógica para editar cantidad
+        function editarCantidad(codigo) {
+            let cantidadActual = inventario[codigo];
+            let nuevaCantidad = prompt(`Editando cantidad para el código: ${codigo}\n\nIngresa la nueva cantidad total (o escribe 0 para eliminar):`, cantidadActual);
+            
+            if (nuevaCantidad === null || nuevaCantidad.trim() === "") return;
+
+            let cantidadParsed = parseInt(nuevaCantidad, 10);
+            
+            if (isNaN(cantidadParsed) || cantidadParsed < 0) {
+                alert("Cantidad no válida.");
+                return;
+            }
+
+            if (cantidadParsed === 0) {
+                eliminarProducto(codigo);
+            } else {
+                inventario[codigo] = cantidadParsed;
+                actualizarTabla();
+            }
+        }
+
+        // SECCIÓN NUEVA: Lógica para eliminar una fila
+        function eliminarProducto(codigo) {
+            if (confirm(`¿Estás seguro de eliminar el código ${codigo} del inventario?`)) {
+                delete inventario[codigo];
+                actualizarTabla();
+            }
+        }
+
+        // Tabla actualizada con la nueva columna de acciones
         function actualizarTabla() {
             const tbody = document.querySelector("#scannedTable tbody");
             tbody.innerHTML = ""; 
@@ -138,12 +212,30 @@
                 let celdaCantidad = document.createElement("td");
                 celdaCantidad.textContent = inventario[codigo];
                 
+                // Celda de botones (Editar y Eliminar)
+                let celdaAcciones = document.createElement("td");
+                celdaAcciones.style.textAlign = "center";
+                celdaAcciones.style.whiteSpace = "nowrap"; // Evita que los botones salten de línea
+                
+                let btnEditar = document.createElement("button");
+                btnEditar.innerHTML = "✏️";
+                btnEditar.className = "action-btn";
+                btnEditar.onclick = () => editarCantidad(codigo);
+
+                let btnEliminar = document.createElement("button");
+                btnEliminar.innerHTML = "🗑️";
+                btnEliminar.className = "action-btn";
+                btnEliminar.onclick = () => eliminarProducto(codigo);
+
+                celdaAcciones.appendChild(btnEditar);
+                celdaAcciones.appendChild(btnEliminar);
+
                 fila.appendChild(celdaCodigo);
                 fila.appendChild(celdaCantidad);
+                fila.appendChild(celdaAcciones);
                 tbody.appendChild(fila);
             }
 
-            // Guardar los datos en la memoria interna
             localStorage.setItem("inventario_celular", JSON.stringify(inventario));
 
             if (tieneDatos) {
@@ -155,7 +247,6 @@
             }
         }
 
-        // Función para borrar la memoria interna
         function limpiarInventario() {
             if (confirm("⚠️ ¿Estás seguro de que deseas borrar TODO el inventario guardado en este celular? Esta acción no se puede deshacer.")) {
                 inventario = {};
@@ -164,11 +255,10 @@
             }
         }
 
-        // Generar y descargar el archivo XLS
         function exportarExcel() {
             let tablaHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head><meta charset="utf-8"></head><body><table border="1">
-            <tr><th style="background-color:#007bff; color:white;">Código de Barra</th><th style="background-color:#007bff; color:white;">Cantidad</th></tr>`;
+            <tr><th style="background-color:#343a40; color:white;">Código de Barra</th><th style="background-color:#343a40; color:white;">Cantidad</th></tr>`;
             
             for (let codigo in inventario) {
                 tablaHtml += `<tr><td style="mso-number-format:'\\@';">${codigo}</td><td>${inventario[codigo]}</td></tr>`;
@@ -191,7 +281,6 @@
             URL.revokeObjectURL(url);
         }
 
-        // Iniciar el escáner
         const html5QrcodeScanner = new Html5QrcodeScanner(
             "reader", 
             { fps: 10, qrbox: {width: 250, height: 150} }, 
