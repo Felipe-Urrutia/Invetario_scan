@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mi Escáner Pro (PWA y Modales)</title>
+    <title>Mi Escáner Pro (QR y Códigos de Barra)</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#343a40">
@@ -14,9 +14,26 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: Arial, sans-serif; padding: 10px; background: #f4f4f9; margin: 0; }
-        h2 { text-align: center; color: #333; }
-        #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 8px; overflow: hidden; background: white; }
+        h2 { text-align: center; color: #333; margin-top: 15px; }
         
+        /* Contenedor de la cámara optimizado */
+        #reader { 
+            width: 100%; 
+            max-width: 500px; 
+            margin: 0 auto; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            background: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        
+        /* Ajuste estético interno del escáner */
+        #reader video { border-radius: 12px; object-fit: cover; }
+        #reader__dashboard_section_csr button {
+            background: #6c757d; color: white; border: none; padding: 8px 12px;
+            border-radius: 5px; font-weight: bold; cursor: pointer; margin: 5px;
+        }
+
         .manual-container { 
             margin-top: 15px; padding: 15px; background: white; 
             border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -51,9 +68,7 @@
         .export-btn { background: #28a745; }
         .clear-btn { background: #dc3545; }
 
-        /* =========================================
-           ESTILOS PARA LOS MODALES PERSONALIZADOS
-           ========================================= */
+        /* MODALES PERSONALIZADOS */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.6); display: none; 
@@ -75,17 +90,15 @@
         .modal-buttons { display: flex; justify-content: space-between; gap: 10px; }
         .btn-modal {
             flex: 1; padding: 12px; border: none; border-radius: 8px;
-            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+            font-size: 16px; font-weight: bold; cursor: pointer;
         }
         .btn-cancel { background: #e0e0e0; color: #333; }
-        .btn-cancel:hover { background: #d0d0d0; }
         .btn-confirm { background: #007bff; color: white; }
-        .btn-confirm:hover { background: #0056b3; }
     </style>
 </head>
 <body>
 
-    <h2>Escáner de Inventario</h2>
+    <h2>Escáner Dual (Barras y QR)</h2>
     
     <div id="reader"></div>
 
@@ -143,11 +156,9 @@
 
         function showModal({ title, message, type = 'alert', defaultValue = '' }) {
             return new Promise((resolve) => {
-                isModalOpen = true; // Pausa el escáner de la cámara
-                
+                isModalOpen = true; 
                 document.getElementById('modalTitle').textContent = title;
                 document.getElementById('modalMessage').textContent = message;
-                
                 const input = document.getElementById('modalInput');
                 const btnCancel = document.getElementById('btnModalCancel');
                 
@@ -159,24 +170,22 @@
                 }
 
                 if (type === 'alert') {
-                    btnCancel.style.display = 'none'; // Las alertas solo tienen "Aceptar"
+                    btnCancel.style.display = 'none';
                 } else {
                     btnCancel.style.display = 'inline-block';
                 }
 
                 document.getElementById('customModal').style.display = 'flex';
-                
                 if (type === 'prompt') {
                     setTimeout(() => input.focus(), 100);
                 }
-
                 modalResolve = resolve;
             });
         }
 
         function closeModal(result) {
             document.getElementById('customModal').style.display = 'none';
-            isModalOpen = false; // Reactiva el escáner
+            isModalOpen = false; 
             if (modalResolve) {
                 modalResolve(result);
                 modalResolve = null;
@@ -193,7 +202,6 @@
             }
         };
 
-        // Permite presionar "Enter" para confirmar en el input
         document.getElementById('modalInput').addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
                 event.preventDefault();
@@ -201,46 +209,39 @@
             }
         });
 
-
         // ==========================================
-        // LÓGICA DE LA APLICACIÓN (Refactorizada con Modales)
+        // LÓGICA DE LA APLICACIÓN
         // ==========================================
         function sonarBeep() {
             try {
                 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 let oscillator = audioCtx.createOscillator();
                 let gainNode = audioCtx.createGain();
-
                 oscillator.type = 'sine';
                 oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
                 gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
-
                 oscillator.start();
                 oscillator.stop(audioCtx.currentTime + 0.15);
-            } catch (e) {
-                console.log("No se pudo reproducir el audio: ", e);
-            }
+            } catch (e) { console.log(e); }
         }
 
         async function onScanSuccess(decodedText, decodedResult) {
-            if (isModalOpen) return; // Ignora escaneos si hay un modal en pantalla
+            if (isModalOpen) return; 
 
             let tiempoActual = new Date().getTime();
             if (decodedText === ultimoCodigo && (tiempoActual - tiempoUltimoEscaneo) < 2500) {
-                return;
+                return; 
             }
 
             ultimoCodigo = decodedText;
             tiempoUltimoEscaneo = tiempoActual;
             sonarBeep();
 
-            // Usamos await para esperar la respuesta del usuario
             let inputCantidad = await showModal({
                 title: "¡Código Detectado!",
-                message: `${decodedText}\n\nIngrese la cantidad a registrar:`,
+                message: `Valor: ${decodedText}\n\nIngrese la cantidad a registrar:`,
                 type: "prompt",
                 defaultValue: "1"
             });
@@ -270,7 +271,6 @@
             }
 
             registrarProducto(codigoInput, cantidadInput);
-            
             document.getElementById("inputCodigo").value = "";
             document.getElementById("inputCantidad").value = "1";
         }
@@ -288,7 +288,7 @@
             let cantidadActual = inventario[codigo];
             let nuevaCantidad = await showModal({
                 title: "Editar Cantidad",
-                message: `Editando código: ${codigo}\nIngresa la nueva cantidad (0 para eliminar):`,
+                message: `Código: ${codigo}\nIngresa la cantidad total (0 para eliminar):`,
                 type: "prompt",
                 defaultValue: cantidadActual
             });
@@ -296,7 +296,6 @@
             if (nuevaCantidad === null || nuevaCantidad.toString().trim() === "") return;
 
             let cantidadParsed = parseInt(nuevaCantidad, 10);
-            
             if (isNaN(cantidadParsed) || cantidadParsed < 0) {
                 await showModal({ title: "Error", message: "Cantidad no válida.", type: "alert" });
                 return;
@@ -317,7 +316,6 @@
                 message: `¿Estás seguro de eliminar el código ${codigo}?`,
                 type: "confirm"
             });
-
             if (confirmado) {
                 delete inventario[codigo];
                 actualizarTabla();
@@ -327,7 +325,6 @@
         function actualizarTabla() {
             const tbody = document.querySelector("#scannedTable tbody");
             tbody.innerHTML = ""; 
-            
             let tieneDatos = false;
 
             for (let codigo in inventario) {
@@ -356,7 +353,6 @@
 
                 celdaAcciones.appendChild(btnEditar);
                 celdaAcciones.appendChild(btnEliminar);
-
                 fila.appendChild(celdaCodigo);
                 fila.appendChild(celdaCantidad);
                 fila.appendChild(celdaAcciones);
@@ -377,10 +373,9 @@
         async function limpiarInventario() {
             let confirmado = await showModal({
                 title: "⚠️ Advertencia",
-                message: "¿Estás seguro de que deseas borrar TODO el inventario? Esta acción no se puede deshacer.",
+                message: "¿Estás seguro de borrar TODO el inventario? Esta acción no es reversible.",
                 type: "confirm"
             });
-
             if (confirmado) {
                 inventario = {};
                 localStorage.removeItem("inventario_celular");
@@ -391,45 +386,66 @@
         function exportarExcel() {
             let tablaHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head><meta charset="utf-8"></head><body><table border="1">
-            <tr><th style="background-color:#343a40; color:white;">Código de Barra</th><th style="background-color:#343a40; color:white;">Cantidad</th></tr>`;
-            
+            <tr><th style="background-color:#343a40; color:white;">Código de Barra / QR</th><th style="background-color:#343a40; color:white;">Cantidad</th></tr>`;
             for (let codigo in inventario) {
                 tablaHtml += `<tr><td style="mso-number-format:'\\@';">${codigo}</td><td>${inventario[codigo]}</td></tr>`;
             }
-            
             tablaHtml += `</table></body></html>`;
 
             let blob = new Blob(['\ufeff', tablaHtml], { type: 'application/vnd.ms-excel' });
             let url = URL.createObjectURL(blob);
-            
             let a = document.createElement('a');
             a.href = url;
-            
             let fecha = new Date().toISOString().slice(0, 10);
             a.download = `inventario_${fecha}.xls`;
-            
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
 
+        // ==========================================
+        // CONFIGURACIÓN DUAL OPTIMIZADA (CÁMARA)
+        // ==========================================
+        function configuracionDeEscaneo(viewfinderWidth, viewfinderHeight) {
+            // Genera una zona de escaneo rectangular ideal tanto para QR como para Barras largas
+            let minEdgePercentage = 0.75; 
+            let boxWidth = viewfinderWidth * minEdgePercentage;
+            // Hacemos el recuadro un poco más bajo que ancho para forzar la lectura lineal de barras
+            let boxHeight = viewfinderHeight * 0.45; 
+            
+            if (boxWidth > 400) boxWidth = 400;
+            if (boxHeight > 200) boxHeight = 200;
+
+            return {
+                width: Math.floor(boxWidth),
+                height: Math.floor(boxHeight)
+            };
+        }
+
         const html5QrcodeScanner = new Html5QrcodeScanner(
             "reader", 
-            { fps: 10, qrbox: {width: 250, height: 150} }, 
+            { 
+                fps: 20, // Mayor velocidad para capturar barras rápido
+                qrbox: configuracionDeEscaneo, // Caja de escaneo dinámica inteligente
+                rememberLastUsedCamera: true, // No te vuelve a pedir elegir cámara trasera
+                aspectRatio: 1.777778, // Relación 16:9 ideal para enfocar códigos horizontales
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true // Activa aceleración por hardware en celulares modernos
+                }
+            }, 
             false
         );
         html5QrcodeScanner.render(onScanSuccess);
 
-        // REGISTRO DEL SERVICE WORKER PARA LA PWA
+        // REGISTRO DEL SERVICE WORKER PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
-                    .then((reg) => console.log('Service Worker registrado con éxito:', reg.scope))
-                    .catch((err) => console.log('Error al registrar el Service Worker:', err));
+                    .then((reg) => console.log('PWA Lista:', reg.scope))
+                    .catch((err) => console.log('Error PWA:', err));
             });
         }
     </script>
-
 </body>
 </html>
