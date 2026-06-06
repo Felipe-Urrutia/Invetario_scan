@@ -3,433 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mi Escáner Pro (PWA y Modales)</title>
-    
+    <title>Capturador de Inventario</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#343a40">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#1d4ed8">
+    
+    <script src="./html5-qrcode.min.js"></script>
 
-    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 10px; background: #f4f4f9; margin: 0; }
-        h2 { text-align: center; color: #333; }
-        #reader { width: 100%; max-width: 500px; margin: 0 auto; border-radius: 8px; overflow: hidden; background: white; }
-        
-        .manual-container { 
-            margin-top: 15px; padding: 15px; background: white; 
-            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;
-        }
-        .manual-container input { 
-            padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; 
-        }
-        #inputCodigo { flex-grow: 1; min-width: 120px; }
-        #inputCantidad { width: 60px; text-align: center; }
-        .btn-add { 
-            background: #007bff; color: white; border: none; 
-            padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px;
-        }
-
-        .table-container { margin-top: 20px; width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; background: white; text-align: left; }
-        th, td { padding: 12px; border-bottom: 1px solid #ddd; }
-        th { background-color: #343a40; color: white; }
-        
-        .action-btn { 
-            background: none; border: none; font-size: 18px; 
-            cursor: pointer; margin: 0 5px; padding: 5px;
-        }
-        
-        .btn-container { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .btn { 
-            display: none; width: 100%; padding: 15px; 
-            color: white; border: none; box-sizing: border-box;
-            border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer;
-        }
-        .export-btn { background: #28a745; }
-        .clear-btn { background: #dc3545; }
-
-        /* =========================================
-           ESTILOS PARA LOS MODALES PERSONALIZADOS
-           ========================================= */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); display: none; 
-            justify-content: center; align-items: center; z-index: 1000;
-        }
-        .modal-content {
-            background: white; padding: 25px; border-radius: 10px;
-            width: 85%; max-width: 350px; text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .modal-content h3 { margin-top: 0; color: #333; font-size: 20px; }
-        .modal-content p { color: #555; font-size: 16px; margin-bottom: 20px; white-space: pre-wrap; }
-        #modalInput {
-            width: 80%; padding: 12px; font-size: 18px; text-align: center;
-            margin-bottom: 20px; border: 2px solid #007bff; border-radius: 8px;
-            outline: none;
-        }
-        #modalInput:focus { border-color: #0056b3; }
-        .modal-buttons { display: flex; justify-content: space-between; gap: 10px; }
-        .btn-modal {
-            flex: 1; padding: 12px; border: none; border-radius: 8px;
-            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
-        }
-        .btn-cancel { background: #e0e0e0; color: #333; }
-        .btn-cancel:hover { background: #d0d0d0; }
-        .btn-confirm { background: #007bff; color: white; }
-        .btn-confirm:hover { background: #0056b3; }
+        /* Diseño profesional, serio pero con colores vibrantes para agilizar la lectura */
+        :root { --primary: #1d4ed8; --secondary: #3b82f6; --bg: #f3f4f6; --text: #1f2937; --success: #10b981; --danger: #ef4444; }
+        * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+        body { margin: 0; background-color: var(--bg); color: var(--text); padding-bottom: 80px; }
+        header { background-color: var(--primary); color: white; padding: 18px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { margin: 0; font-size: 1.3rem; letter-spacing: 0.5px; }
+        .container { padding: 15px; max-width: 500px; margin: auto; }
+        .card { background: white; padding: 22px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; border-top: 4px solid var(--secondary); }
+        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid var(--bg); padding-bottom: 10px; color: var(--primary); }
+        label { display: block; font-size: 0.9rem; margin-bottom: 6px; color: #4b5563; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        input { width: 100%; padding: 14px; margin-bottom: 18px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1.1rem; transition: border-color 0.2s; }
+        input:focus { border-color: var(--primary); outline: none; }
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: transform 0.1s, opacity 0.2s; margin-bottom: 10px; }
+        button:active { transform: scale(0.98); }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-camara { background-color: #4f46e5; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-config { background: #6b7280; color: white; width: auto; padding: 6px 12px; font-size: 0.85rem; margin: 0; border-radius: 6px; }
+        .hidden { display: none !important; }
+        .scan-count { text-align: center; font-size: 2.5rem; font-weight: 800; color: var(--primary); margin: 10px 0; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--bg); padding-bottom: 10px; margin-bottom: 15px; }
+        .header-flex h2 { border: none; padding: 0; margin: 0; }
+        #lector-qr { border-radius: 8px; overflow: hidden; border: 2px solid var(--primary); }
     </style>
 </head>
 <body>
 
-    <h2>Escáner de Inventario</h2>
-    
-    <div id="reader"></div>
+<header>
+    <h1>Capturador de Inventario</h1>
+</header>
 
-    <div class="manual-container">
-        <input type="text" id="inputCodigo" placeholder="Código manual">
-        <input type="number" id="inputCantidad" placeholder="Cant." value="1" min="1">
-        <button class="btn-add" onclick="agregarManual()">Añadir</button>
+<div class="container">
+    <div id="pantalla-config" class="card">
+        <h2>Configuración de Sesión</h2>
+        <label>Tipo de Fleje</label>
+        <input type="number" id="inp-fleje" placeholder="Ej: 911" value="911">
+        
+        <label>Código de Sección</label>
+        <input type="number" id="inp-seccion" placeholder="Ej: 06 o 04">
+        
+        <label>Guía de Posición (Mueble/Sector)</label>
+        <input type="text" id="inp-posicion" placeholder="Ej: SA" maxlength="2" style="text-transform: uppercase;">
+        
+        <button class="btn-primary" onclick="guardarConfiguracion()">Fijar Datos e Iniciar</button>
     </div>
 
-    <div class="table-container">
-        <table id="scannedTable">
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Cant.</th>
-                    <th style="text-align: center;">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="btn-container">
-        <button class="btn export-btn" id="btnExportar" onclick="exportarExcel()">Exportar a XLS</button>
-        <button class="btn clear-btn" id="btnLimpiar" onclick="limpiarInventario()">Limpiar Todo el Inventario</button>
-    </div>
-
-    <div id="customModal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 id="modalTitle">Título</h3>
-            <p id="modalMessage">Mensaje</p>
-            <input type="number" id="modalInput" min="0">
-            <div class="modal-buttons">
-                <button id="btnModalCancel" class="btn-modal btn-cancel">Cancelar</button>
-                <button id="btnModalConfirm" class="btn-modal btn-confirm">Aceptar</button>
-            </div>
+    <div id="pantalla-captura" class="card hidden">
+        <div class="header-flex">
+            <h2>Ingreso de Producto</h2>
+            <button class="btn-config" onclick="editarConfiguracion()">⚙️ Editar</button>
         </div>
+        
+        <button id="btn-camara" class="btn-camara" onclick="iniciarCamara()">📷 Activar Lector Láser</button>
+        <div id="lector-qr" class="hidden" style="width: 100%; margin-bottom: 15px;"></div>
+        
+        <label>Código EAN</label>
+        <input type="number" id="inp-codigo" placeholder="Escanea o teclea el código" autofocus>
+        
+        <label>Cantidad / Peso</label>
+        <input type="number" id="inp-cantidad" placeholder="Ej: 3 o 1.250" step="0.001">
+        
+        <button class="btn-primary" onclick="registrarProducto()">💾 Guardar Producto</button>
     </div>
 
-    <script>
-        let inventario = JSON.parse(localStorage.getItem("inventario_celular")) || {};
-        let ultimoCodigo = "";
-        let tiempoUltimoEscaneo = 0;
+    <div id="pantalla-exportar" class="card hidden">
+        <h2>Resumen del Inventario</h2>
+        <p style="text-align: center; margin: 0; color: #6b7280; font-weight: bold;">Líneas Escaneadas:</p>
+        <div class="scan-count" id="contador-escaneos">0</div>
+        
+        <button class="btn-success" onclick="exportarArchivo()">📥 Descargar Archivo TXT</button>
+        <button class="btn-danger" onclick="limpiarDatos()">🗑️ Borrar Todo y Reiniciar</button>
+    </div>
+</div>
 
-        document.addEventListener("DOMContentLoaded", () => {
-            actualizarTabla();
-        });
+<script>
+    // Variables globales
+    let configActual = JSON.parse(localStorage.getItem('inventario_config')) || null;
+    let listaEscaneos = JSON.parse(localStorage.getItem('inventario_datos')) || [];
+    let correlativo = parseInt(localStorage.getItem('inventario_correlativo')) || 1;
+    
+    // Variables para el origen del código
+    let esIngresoManual = true; 
+    let escanerActivo = null;
 
-        // ==========================================
-        // SISTEMA DE MODALES PERSONALIZADOS
-        // ==========================================
-        let isModalOpen = false;
-        let modalResolve = null;
+    // Inicialización al cargar la página
+    window.onload = () => {
+        // Registrar el Service Worker para funcionamiento offline
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.error("Error en SW:", err));
+        }
+        
+        // Si ya hay configuración guardada, saltar directo a capturar
+        if (configActual) {
+            mostrarPantallaCaptura();
+        }
+        actualizarContador();
+    };
 
-        function showModal({ title, message, type = 'alert', defaultValue = '' }) {
-            return new Promise((resolve) => {
-                isModalOpen = true; // Pausa el escáner de la cámara
-                
-                document.getElementById('modalTitle').textContent = title;
-                document.getElementById('modalMessage').textContent = message;
-                
-                const input = document.getElementById('modalInput');
-                const btnCancel = document.getElementById('btnModalCancel');
-                
-                if (type === 'prompt') {
-                    input.style.display = 'inline-block';
-                    input.value = defaultValue;
-                } else {
-                    input.style.display = 'none';
-                }
+    // Si el usuario toca el input con el teclado, forzamos el modo manual (Indicador = 0)
+    document.getElementById('inp-codigo').addEventListener('input', () => {
+        esIngresoManual = true;
+    });
 
-                if (type === 'alert') {
-                    btnCancel.style.display = 'none'; // Las alertas solo tienen "Aceptar"
-                } else {
-                    btnCancel.style.display = 'inline-block';
-                }
+    // --- FUNCIONES DE INTERFAZ ---
+    function guardarConfiguracion() {
+        const fleje = document.getElementById('inp-fleje').value;
+        const seccion = document.getElementById('inp-seccion').value;
+        const posicion = document.getElementById('inp-posicion').value;
 
-                document.getElementById('customModal').style.display = 'flex';
-                
-                if (type === 'prompt') {
-                    setTimeout(() => input.focus(), 100);
-                }
-
-                modalResolve = resolve;
-            });
+        if (!fleje || !seccion || !posicion) {
+            return alert("Por favor, completa los tres campos para iniciar el inventario.");
         }
 
-        function closeModal(result) {
-            document.getElementById('customModal').style.display = 'none';
-            isModalOpen = false; // Reactiva el escáner
-            if (modalResolve) {
-                modalResolve(result);
-                modalResolve = null;
-            }
-        }
+        configActual = { fleje, seccion, posicion };
+        localStorage.setItem('inventario_config', JSON.stringify(configActual));
+        mostrarPantallaCaptura();
+    }
 
-        document.getElementById('btnModalCancel').onclick = () => closeModal(null);
-        document.getElementById('btnModalConfirm').onclick = () => {
-            const input = document.getElementById('modalInput');
-            if (input.style.display === 'inline-block') {
-                closeModal(input.value);
-            } else {
-                closeModal(true);
-            }
+    function editarConfiguracion() {
+        document.getElementById('pantalla-config').classList.remove('hidden');
+        document.getElementById('pantalla-captura').classList.add('hidden');
+        
+        document.getElementById('inp-fleje').value = configActual.fleje;
+        document.getElementById('inp-seccion').value = configActual.seccion;
+        document.getElementById('inp-posicion').value = configActual.posicion;
+        
+        detenerCamara(); // Por si la cámara quedó abierta
+    }
+
+    function mostrarPantallaCaptura() {
+        document.getElementById('pantalla-config').classList.add('hidden');
+        document.getElementById('pantalla-captura').classList.remove('hidden');
+        document.getElementById('pantalla-exportar').classList.remove('hidden');
+        document.getElementById('inp-codigo').focus();
+    }
+
+    // --- FUNCIONES DE LA CÁMARA (Librería html5-qrcode) ---
+    function iniciarCamara() {
+        const divLector = document.getElementById('lector-qr');
+        divLector.classList.remove('hidden');
+        document.getElementById('btn-camara').classList.add('hidden');
+
+        escanerActivo = new Html5Qrcode("lector-qr");
+        
+        const configCamara = { 
+            fps: 10, 
+            qrbox: { width: 250, height: 100 },
+            formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ]
         };
 
-        // Permite presionar "Enter" para confirmar en el input
-        document.getElementById('modalInput').addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                document.getElementById('btnModalConfirm').click();
+        escanerActivo.start({ facingMode: "environment" }, configCamara, 
+            (textoDecodificado) => {
+                // Éxito: Se leyó un código de barras
+                document.getElementById('inp-codigo').value = textoDecodificado;
+                esIngresoManual = false; // Indicador será '1'
+                
+                // Vibración háptica
+                if(navigator.vibrate) navigator.vibrate(200);
+
+                detenerCamara();
+                document.getElementById('inp-cantidad').focus(); // Salto automático
+            },
+            (mensajeError) => {
+                // Errores continuos de enfoque se ignoran silenciosamente
             }
+        ).catch(err => {
+            alert("No se pudo iniciar la cámara. Verifica los permisos del navegador.");
+            detenerCamara();
         });
+    }
 
+    function detenerCamara() {
+        if (escanerActivo) {
+            escanerActivo.stop().then(() => {
+                document.getElementById('lector-qr').classList.add('hidden');
+                document.getElementById('btn-camara').classList.remove('hidden');
+            }).catch(e => console.log(e));
+        }
+    }
 
-        // ==========================================
-        // LÓGICA DE LA APLICACIÓN (Refactorizada con Modales)
-        // ==========================================
-        function sonarBeep() {
-            try {
-                let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                let oscillator = audioCtx.createOscillator();
-                let gainNode = audioCtx.createGain();
+    // --- LÓGICA DE LA TRAMA (Motor de Datos) ---
+    function generarTramaExacta(numCorr, codigo, cant, fueManual) {
+        const sufijoSistema = "001S"; // Fijo del terminal
+        
+        const corrF = numCorr.toString().padStart(6, '0');
+        const indicadorF = fueManual ? "0" : "1"; // 0: Teclado, 1: Cámara
+        const prodF = codigo.toString().padStart(13, '0');
+        const cantF = Math.round(parseFloat(cant) * 1000).toString().padStart(9, '0');
+        const flejeF = configActual.fleje.toString().padStart(3, '0');
+        const seccionF = configActual.seccion.toString().padStart(5, '0');
+        const posF = configActual.posicion.toString().substring(0, 2).toUpperCase().padStart(2, '0');
+        
+        return `${corrF}${indicadorF}${prodF}${cantF}${flejeF}${seccionF}${posF}${sufijoSistema}`;
+    }
 
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    function registrarProducto() {
+        const codigo = document.getElementById('inp-codigo').value;
+        const cantidad = document.getElementById('inp-cantidad').value;
 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.15);
-            } catch (e) {
-                console.log("No se pudo reproducir el audio: ", e);
-            }
+        if (!codigo || !cantidad) {
+            return alert("Falta ingresar el código o la cantidad.");
         }
 
-        async function onScanSuccess(decodedText, decodedResult) {
-            if (isModalOpen) return; // Ignora escaneos si hay un modal en pantalla
+        const trama = generarTramaExacta(correlativo, codigo, cantidad, esIngresoManual);
+        
+        listaEscaneos.push(trama);
+        localStorage.setItem('inventario_datos', JSON.stringify(listaEscaneos));
+        
+        correlativo++;
+        localStorage.setItem('inventario_correlativo', correlativo);
 
-            let tiempoActual = new Date().getTime();
-            if (decodedText === ultimoCodigo && (tiempoActual - tiempoUltimoEscaneo) < 2500) {
-                return;
-            }
+        // Resetear para la siguiente línea
+        document.getElementById('inp-codigo').value = '';
+        document.getElementById('inp-cantidad').value = '';
+        esIngresoManual = true; 
+        document.getElementById('inp-codigo').focus();
+        
+        actualizarContador();
+    }
 
-            ultimoCodigo = decodedText;
-            tiempoUltimoEscaneo = tiempoActual;
-            sonarBeep();
+    function actualizarContador() {
+        document.getElementById('contador-escaneos').innerText = listaEscaneos.length;
+    }
 
-            // Usamos await para esperar la respuesta del usuario
-            let inputCantidad = await showModal({
-                title: "¡Código Detectado!",
-                message: `${decodedText}\n\nIngrese la cantidad a registrar:`,
-                type: "prompt",
-                defaultValue: "1"
-            });
+    function exportarArchivo() {
+        if (listaEscaneos.length === 0) return alert("No hay datos para exportar.");
+        
+        const contenido = listaEscaneos.join('\n');
+        const blob = new Blob([contenido], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        // Fecha en formato local para el nombre del archivo
+        const fecha = new Date().toLocaleDateString('es-CL').replace(/-/g, '');
+        a.download = `INV_${configActual.posicion}_${configActual.seccion}_${fecha}.txt`;
+        
+        a.href = url;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
 
-            if (inputCantidad === null || inputCantidad.toString().trim() === "") return;
-
-            let cantidad = parseInt(inputCantidad, 10);
-            if (isNaN(cantidad) || cantidad <= 0) {
-                await showModal({ title: "Error", message: "Cantidad no válida.", type: "alert" });
-                return;
-            }
-
-            registrarProducto(decodedText, cantidad);
+    function limpiarDatos() {
+        if(confirm("⚠️ ¿Estás completamente seguro? Esto borrará todos los escaneos actuales sin descargar el archivo.")) {
+            listaEscaneos = [];
+            correlativo = 1;
+            localStorage.removeItem('inventario_datos');
+            localStorage.removeItem('inventario_correlativo');
+            actualizarContador();
+            detenerCamara();
         }
-
-        async function agregarManual() {
-            let codigoInput = document.getElementById("inputCodigo").value.trim();
-            let cantidadInput = parseInt(document.getElementById("inputCantidad").value, 10);
-
-            if (codigoInput === "") {
-                await showModal({ title: "Atención", message: "Por favor, ingresa un código.", type: "alert" });
-                return;
-            }
-            if (isNaN(cantidadInput) || cantidadInput <= 0) {
-                await showModal({ title: "Error", message: "Cantidad no válida.", type: "alert" });
-                return;
-            }
-
-            registrarProducto(codigoInput, cantidadInput);
-            
-            document.getElementById("inputCodigo").value = "";
-            document.getElementById("inputCantidad").value = "1";
-        }
-
-        function registrarProducto(codigo, cantidad) {
-            if (inventario[codigo]) {
-                inventario[codigo] += cantidad;
-            } else {
-                inventario[codigo] = cantidad;
-            }
-            actualizarTabla();
-        }
-
-        async function editarCantidad(codigo) {
-            let cantidadActual = inventario[codigo];
-            let nuevaCantidad = await showModal({
-                title: "Editar Cantidad",
-                message: `Editando código: ${codigo}\nIngresa la nueva cantidad (0 para eliminar):`,
-                type: "prompt",
-                defaultValue: cantidadActual
-            });
-            
-            if (nuevaCantidad === null || nuevaCantidad.toString().trim() === "") return;
-
-            let cantidadParsed = parseInt(nuevaCantidad, 10);
-            
-            if (isNaN(cantidadParsed) || cantidadParsed < 0) {
-                await showModal({ title: "Error", message: "Cantidad no válida.", type: "alert" });
-                return;
-            }
-
-            if (cantidadParsed === 0) {
-                delete inventario[codigo];
-                actualizarTabla();
-            } else {
-                inventario[codigo] = cantidadParsed;
-                actualizarTabla();
-            }
-        }
-
-        async function eliminarProducto(codigo) {
-            let confirmado = await showModal({
-                title: "Eliminar Registro",
-                message: `¿Estás seguro de eliminar el código ${codigo}?`,
-                type: "confirm"
-            });
-
-            if (confirmado) {
-                delete inventario[codigo];
-                actualizarTabla();
-            }
-        }
-
-        function actualizarTabla() {
-            const tbody = document.querySelector("#scannedTable tbody");
-            tbody.innerHTML = ""; 
-            
-            let tieneDatos = false;
-
-            for (let codigo in inventario) {
-                tieneDatos = true;
-                let fila = document.createElement("tr");
-                
-                let celdaCodigo = document.createElement("td");
-                celdaCodigo.textContent = codigo;
-                
-                let celdaCantidad = document.createElement("td");
-                celdaCantidad.textContent = inventario[codigo];
-                
-                let celdaAcciones = document.createElement("td");
-                celdaAcciones.style.textAlign = "center";
-                celdaAcciones.style.whiteSpace = "nowrap"; 
-                
-                let btnEditar = document.createElement("button");
-                btnEditar.innerHTML = "✏️";
-                btnEditar.className = "action-btn";
-                btnEditar.onclick = () => editarCantidad(codigo);
-
-                let btnEliminar = document.createElement("button");
-                btnEliminar.innerHTML = "🗑️";
-                btnEliminar.className = "action-btn";
-                btnEliminar.onclick = () => eliminarProducto(codigo);
-
-                celdaAcciones.appendChild(btnEditar);
-                celdaAcciones.appendChild(btnEliminar);
-
-                fila.appendChild(celdaCodigo);
-                fila.appendChild(celdaCantidad);
-                fila.appendChild(celdaAcciones);
-                tbody.appendChild(fila);
-            }
-
-            localStorage.setItem("inventario_celular", JSON.stringify(inventario));
-
-            if (tieneDatos) {
-                document.getElementById("btnExportar").style.display = "block";
-                document.getElementById("btnLimpiar").style.display = "block";
-            } else {
-                document.getElementById("btnExportar").style.display = "none";
-                document.getElementById("btnLimpiar").style.display = "none";
-            }
-        }
-
-        async function limpiarInventario() {
-            let confirmado = await showModal({
-                title: "⚠️ Advertencia",
-                message: "¿Estás seguro de que deseas borrar TODO el inventario? Esta acción no se puede deshacer.",
-                type: "confirm"
-            });
-
-            if (confirmado) {
-                inventario = {};
-                localStorage.removeItem("inventario_celular");
-                actualizarTabla();
-            }
-        }
-
-        function exportarExcel() {
-            let tablaHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-            <head><meta charset="utf-8"></head><body><table border="1">
-            <tr><th style="background-color:#343a40; color:white;">Código de Barra</th><th style="background-color:#343a40; color:white;">Cantidad</th></tr>`;
-            
-            for (let codigo in inventario) {
-                tablaHtml += `<tr><td style="mso-number-format:'\\@';">${codigo}</td><td>${inventario[codigo]}</td></tr>`;
-            }
-            
-            tablaHtml += `</table></body></html>`;
-
-            let blob = new Blob(['\ufeff', tablaHtml], { type: 'application/vnd.ms-excel' });
-            let url = URL.createObjectURL(blob);
-            
-            let a = document.createElement('a');
-            a.href = url;
-            
-            let fecha = new Date().toISOString().slice(0, 10);
-            a.download = `inventario_${fecha}.xls`;
-            
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        const html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { fps: 10, qrbox: {width: 250, height: 150} }, 
-            false
-        );
-        html5QrcodeScanner.render(onScanSuccess);
-
-        // REGISTRO DEL SERVICE WORKER PARA LA PWA
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then((reg) => console.log('Service Worker registrado con éxito:', reg.scope))
-                    .catch((err) => console.log('Error al registrar el Service Worker:', err));
-            });
-        }
-    </script>
+    }
+</script>
 
 </body>
 </html>
