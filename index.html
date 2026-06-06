@@ -80,7 +80,7 @@
         <p style="text-align: center; margin: 0; color: #6b7280; font-weight: bold;">Líneas Escaneadas:</p>
         <div class="scan-count" id="contador-escaneos">0</div>
         
-        <button class="btn-success" onclick="exportarArchivo()">📥 Descargar Archivo TXT</button>
+        <button class="btn-success" onclick="exportarArchivo()">📊 Descargar Archivo Excel</button>
         <button class="btn-danger" onclick="limpiarDatos()">🗑️ Borrar Todo y Reiniciar</button>
     </div>
 </div>
@@ -238,20 +238,32 @@
     function exportarArchivo() {
         if (listaEscaneos.length === 0) return alert("No hay datos para exportar.");
         
-        const contenido = listaEscaneos.join('\n');
-        const blob = new Blob([contenido], { type: 'text/plain' });
+        // 1. Creamos una estructura que Excel reconoce de forma nativa
+        let tablaHTML = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
+        tablaHTML += '<head><meta charset="utf-8"></head><body><table>';
+        
+        // 2. Inyectamos cada trama en una fila de la tabla
+        listaEscaneos.forEach(trama => {
+            // El atributo mso-number-format:"\@" es vital: bloquea el formateo automático de Excel
+            tablaHTML += `<tr><td style='mso-number-format:"\\@";'>${trama}</td></tr>`;
+        });
+        
+        tablaHTML += '</table></body></html>';
+
+        // 3. Generamos el archivo con la extensión y tipo de Microsoft Excel
+        const blob = new Blob([tablaHTML], { type: 'application/vnd.ms-excel' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         
-        // Fecha en formato local para el nombre del archivo
+        // 4. Nombramos el archivo con extensión .xls
         const fecha = new Date().toLocaleDateString('es-CL').replace(/-/g, '');
-        a.download = `INV_${configActual.posicion}_${configActual.seccion}_${fecha}.txt`;
+        a.download = `INV_${configActual.posicion}_${configActual.seccion}_${fecha}.xls`;
         
         a.href = url;
         a.click();
         URL.revokeObjectURL(url);
     }
-
+    
     function limpiarDatos() {
         if(confirm("⚠️ ¿Estás completamente seguro? Esto borrará todos los escaneos actuales sin descargar el archivo.")) {
             listaEscaneos = [];
