@@ -210,26 +210,42 @@
         const codigo = document.getElementById('inp-codigo').value;
         const cantidad = document.getElementById('inp-cantidad').value;
 
-        if (!codigo || !cantidad) {
-            return alert("Falta ingresar el código o la cantidad.");
-        }
+    // 1. Validar que no estén vacíos
+     if (!codigo || !cantidad) {
+        return alert("Falta ingresar el código o la cantidad.");
+     }
 
-        const trama = generarTramaExacta(correlativo, codigo, cantidad, esIngresoManual);
-        
-        listaEscaneos.push(trama);
-        localStorage.setItem('inventario_datos', JSON.stringify(listaEscaneos));
-        
-        correlativo++;
-        localStorage.setItem('inventario_correlativo', correlativo);
+    // 2. Validar que la cantidad no sea negativa ni cero
+    // Usamos parseFloat para asegurarnos de que evalúa el valor matemático, no como texto
+     if (parseFloat(cantidad) <= 0) {
+        document.getElementById('inp-cantidad').focus();
+        return alert("Error: La cantidad o peso debe ser mayor a cero.");
+     }
 
-        // Resetear para la siguiente línea
-        document.getElementById('inp-codigo').value = '';
-        document.getElementById('inp-cantidad').value = '';
-        esIngresoManual = true; 
+    // 3. Validar que el código no sea negativo
+     if (parseFloat(codigo) <= 0) {
         document.getElementById('inp-codigo').focus();
-        
-        actualizarContador();
-    }
+        return alert("Error: El código del producto no puede ser negativo.");
+     }
+
+    // Si pasa todas las validaciones, generamos la trama
+    const trama = generarTramaExacta(correlativo, codigo, cantidad, esIngresoManual);
+    
+    listaEscaneos.push(trama);
+    localStorage.setItem('inventario_datos', JSON.stringify(listaEscaneos));
+    
+    correlativo++;
+    localStorage.setItem('inventario_correlativo', correlativo);
+
+    // Resetear para la siguiente línea
+    document.getElementById('inp-codigo').value = '';
+    document.getElementById('inp-cantidad').value = '';
+    esIngresoManual = true; 
+    document.getElementById('inp-codigo').focus();
+    
+    actualizarContador();
+}
+
 
     function actualizarContador() {
         document.getElementById('contador-escaneos').innerText = listaEscaneos.length;
