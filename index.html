@@ -131,32 +131,38 @@ button:active { transform: scale(0.96); } /* Efecto de "hundimiento" al tocar */
 </header>
 
 <div class="container">
+    
     <div id="pantalla-config" class="card">
-        <h2>Configuración de Sesión</h2>
+        <h2>⚙️ Configuración</h2>
         <label>Tipo de Fleje</label>
         <input type="number" id="inp-fleje" placeholder="Ej: 911" value="911">
         
-        <label>Código de Sección</label>
-        <input type="number" id="inp-seccion" placeholder="Ej: 06 o 04">
+        <div class="grid-2">
+            <div>
+                <label>Sección</label>
+                <input type="number" id="inp-seccion" placeholder="Ej: 06">
+            </div>
+            <div>
+                <label>Posición</label>
+                <input type="text" id="inp-posicion" placeholder="Ej: SA" maxlength="2" style="text-transform: uppercase;">
+            </div>
+        </div>
         
-        <label>Guía de Posición (Mueble/Sector)</label>
-        <input type="text" id="inp-posicion" placeholder="Ej: SA" maxlength="2" style="text-transform: uppercase;">
-        
-        <button class="btn-primary" onclick="guardarConfiguracion()">Fijar Datos e Iniciar</button>
+        <button class="btn-primary" onclick="guardarConfiguracion()">🚀 Iniciar Captura</button>
     </div>
 
     <div id="pantalla-captura" class="card hidden">
         <div class="header-flex">
-            <h2>Ingreso de Producto</h2>
+            <h2>📦 Ingreso</h2>
             <button class="btn-config" onclick="editarConfiguracion()">⚙️ Editar</button>
         </div>
         
-        <button id="btn-camara" class="btn-camara" onclick="iniciarCamara()">📷 Activar Lector Láser</button>
-        <div id="lector-qr" class="hidden" style="width: 100%; margin-bottom: 15px;"></div>
-
+        <button id="btn-camara" class="btn-camara" onclick="iniciarCamara()">📷 Activar Escáner</button>
+        <div id="lector-qr" class="hidden" style="width: 100%; margin-bottom: 20px;"></div>
+        
         <label>Código EAN</label>
-        <input type="number" id="inp-codigo" placeholder="Escanea o teclea el código" min="1" autofocus>
-
+        <input type="number" id="inp-codigo" placeholder="Escanea o teclea" min="1" autofocus>
+        
         <label>Cantidad / Peso</label>
         <input type="number" id="inp-cantidad" placeholder="Ej: 3 o 1.250" step="0.001" min="0.001">
         
