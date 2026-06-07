@@ -121,6 +121,22 @@ button:active { transform: scale(0.96); } /* Efecto de "hundimiento" al tocar */
 }
 .exito-flash { animation: destelloExito 0.6s ease-out; }
 
+        /* Ventana emergente personalizada */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5); display: flex; align-items: center;
+    justify-content: center; z-index: 9999; padding: 20px;
+    backdrop-filter: blur(4px);
+}
+.modal-card {
+    background: white; padding: 24px; border-radius: 16px;
+    max-width: 400px; width: 100%; text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border-top: 5px solid var(--primary);
+}
+.modal-card p { font-size: 1.1rem; font-weight: 500; margin-bottom: 20px; color: var(--text); }
+.modal-botones { display: flex; gap: 12px; }
+.modal-botones button { margin: 0; padding: 12px; font-size: 1rem; }
         
     </style>
 </head>
@@ -225,18 +241,18 @@ function reproducirTono(frecuencia, tipo, duracion, volumen = 0.1) {
 // 🔊 Sonidos Específicos
 function sonidoEscaneo() {
     // Pitido láser clásico (agudo y cortísimo)
-    reproducirTono(1500, 'sine', 0.1, 0.2);
+    reproducirTono(1600, 'triangle', 0.12, 1.0);
 }
 
 function sonidoExito() {
     // Campanilla de confirmación (dos tonos suaves ascendentes)
-    reproducirTono(600, 'sine', 0.1, 0.1);
-    setTimeout(() => reproducirTono(900, 'sine', 0.15, 0.1), 100);
+    reproducirTono(700, 'sine', 0.08, 1.0);
+    setTimeout(() => reproducirTono(1000, 'sine', 0.15, 1.0), 80);
 }
 
 function sonidoError() {
     // Zumbido grave de error
-    reproducirTono(200, 'sawtooth', 0.4, 0.15);
+    reproducirTono(190, 'square', 0.45, 1.0);
 }
 
     // Inicialización al cargar la página
@@ -258,6 +274,39 @@ function sonidoError() {
         esIngresoManual = true;
     });
 
+// Reemplazo estético de alert()
+function lanzarAlerta(mensaje) {
+    document.getElementById('modal-mensaje').innerText = mensaje;
+    const btnOk = document.getElementById('modal-btn-ok');
+    const btnCancel = document.getElementById('modal-btn-cancel');
+    
+    btnCancel.classList.add('hidden'); // No se necesita "Cancelar"
+    document.getElementById('custom-modal').classList.remove('hidden');
+    
+    btnOk.onclick = () => {
+        document.getElementById('custom-modal').classList.add('hidden');
+    };
+}
+
+// Reemplazo estético de confirm()
+function lanzarConfirmacion(mensaje, funcionAccion) {
+    document.getElementById('modal-mensaje').innerText = mensaje;
+    const btnOk = document.getElementById('modal-btn-ok');
+    const btnCancel = document.getElementById('modal-btn-cancel');
+    
+    btnCancel.classList.remove('hidden'); // Mostrar "Cancelar"
+    document.getElementById('custom-modal').classList.remove('hidden');
+    
+    btnOk.onclick = () => {
+        document.getElementById('custom-modal').classList.add('hidden');
+        funcionAccion(); // Ejecuta la acción si acepta
+    };
+    
+    btnCancel.onclick = () => {
+        document.getElementById('custom-modal').classList.add('hidden');
+    };
+}
+    
     // --- FUNCIONES DE INTERFAZ ---
     function guardarConfiguracion() {
        iniciarAudio(); // 🔊 Desbloquea el audio también al iniciar la app
@@ -267,7 +316,7 @@ function sonidoError() {
        const posicion = document.getElementById('inp-posicion').value;
         
         if (!fleje || !seccion || !posicion) {
-            return alert("Por favor, completa los tres campos para iniciar el inventario.");
+            return lanzarAlerta("Por favor, completa los tres campos para iniciar el inventario.");
         }
 
         configActual = { fleje, seccion, posicion };
@@ -361,7 +410,7 @@ function registrarProducto() {
 
     if (!codigo || !cantidad) {
         sonidoError(); // 🔊 SONIDO DE ERROR
-        return alert("Falta ingresar el código o la cantidad.");
+        return lanzarAlerta("Falta ingresar el código o la cantidad.");
     }
 
     if (parseFloat(cantidad) <= 0) {
@@ -405,7 +454,7 @@ function registrarProducto() {
     }
 
     function exportarArchivo() {
-        if (listaEscaneos.length === 0) return alert("No hay datos para exportar.");
+        if (listaEscaneos.length === 0) return lanzarAlerta("No hay datos para exportar.");
         
         // 1. Creamos una estructura que Excel reconoce de forma nativa
         let tablaHTML = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
@@ -434,16 +483,26 @@ function registrarProducto() {
     }
     
     function limpiarDatos() {
-        if(confirm("⚠️ ¿Estás completamente seguro? Esto borrará todos los escaneos actuales sin descargar el archivo.")) {
-            listaEscaneos = [];
-            correlativo = 1;
-            localStorage.removeItem('inventario_datos');
-            localStorage.removeItem('inventario_correlativo');
-            actualizarContador();
-            detenerCamara();
-        }
-    }
+    lanzarConfirmacion("⚠️ ¿Estás completamente seguro? Esto borrará todos los escaneos actuales sin descargar el archivo.", () => {
+        listaEscaneos = [];
+        correlativo = 1;
+        localStorage.removeItem('inventario_datos');
+        localStorage.removeItem('inventario_correlativo');
+        actualizarContador();
+        detenerCamara();
+    });
+}
 </script>
 
+<div id="custom-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <p id="modal-mensaje">Mensaje de prueba</p>
+        <div class="modal-botones">
+            <button id="modal-btn-cancel" class="btn-config hidden">Cancelar</button>
+            <button id="modal-btn-ok" class="btn-primary">Aceptar</button>
+        </div>
+    </div>
+</div>
+    
 </body>
 </html>
