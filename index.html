@@ -10,30 +10,118 @@
     <script src="./html5-qrcode.min.js"></script>
 
     <style>
-        /* Diseño profesional, serio pero con colores vibrantes para agilizar la lectura */
-        :root { --primary: #1d4ed8; --secondary: #3b82f6; --bg: #f3f4f6; --text: #1f2937; --success: #10b981; --danger: #ef4444; }
-        * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-        body { margin: 0; background-color: var(--bg); color: var(--text); padding-bottom: 80px; }
-        header { background-color: var(--primary); color: white; padding: 18px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { margin: 0; font-size: 1.3rem; letter-spacing: 0.5px; }
-        .container { padding: 15px; max-width: 500px; margin: auto; }
-        .card { background: white; padding: 22px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; border-top: 4px solid var(--secondary); }
-        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid var(--bg); padding-bottom: 10px; color: var(--primary); }
-        label { display: block; font-size: 0.9rem; margin-bottom: 6px; color: #4b5563; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        input { width: 100%; padding: 14px; margin-bottom: 18px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1.1rem; transition: border-color 0.2s; }
-        input:focus { border-color: var(--primary); outline: none; }
-        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: transform 0.1s, opacity 0.2s; margin-bottom: 10px; }
-        button:active { transform: scale(0.98); }
-        .btn-primary { background-color: var(--primary); color: white; }
-        .btn-camara { background-color: #4f46e5; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-success { background-color: var(--success); color: white; }
-        .btn-danger { background-color: var(--danger); color: white; }
-        .btn-config { background: #6b7280; color: white; width: auto; padding: 6px 12px; font-size: 0.85rem; margin: 0; border-radius: 6px; }
-        .hidden { display: none !important; }
-        .scan-count { text-align: center; font-size: 2.5rem; font-weight: 800; color: var(--primary); margin: 10px 0; }
-        .header-flex { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--bg); padding-bottom: 10px; margin-bottom: 15px; }
-        .header-flex h2 { border: none; padding: 0; margin: 0; }
-        #lector-qr { border-radius: 8px; overflow: hidden; border: 2px solid var(--primary); }
+   /* Diseño profesional, moderno y ágil */
+:root { 
+    --primary: #1d4ed8; 
+    --primary-light: #eff6ff;
+    --secondary: #3b82f6; 
+    --bg: #f3f4f6; 
+    --text: #1f2937; 
+    --text-muted: #6b7280;
+    --success: #10b981; 
+    --danger: #ef4444; 
+}
+
+* { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+body { margin: 0; background-color: var(--bg); color: var(--text); padding-bottom: 80px; }
+
+header { 
+    background-color: var(--primary); 
+    color: white; 
+    padding: 20px 18px; 
+    text-align: center; 
+    position: sticky; 
+    top: 0; 
+    z-index: 10; 
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3); /* Sombra más pronunciada en el header */
+}
+h1 { margin: 0; font-size: 1.4rem; font-weight: 700; letter-spacing: 0.5px; }
+
+.container { padding: 16px; max-width: 500px; margin: auto; }
+
+.card { 
+    background: white; 
+    padding: 24px; 
+    border-radius: 16px; /* Bordes más redondeados */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06); /* Sombra más suave y difuminada */
+    margin-bottom: 20px; 
+    border-top: 5px solid var(--secondary); 
+    transition: transform 0.2s ease;
+}
+
+h2 { margin-top: 0; font-size: 1.25rem; border-bottom: 2px solid var(--primary-light); padding-bottom: 12px; color: var(--primary); }
+
+label { display: block; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+input { 
+    width: 100%; 
+    padding: 16px; 
+    margin-bottom: 20px; 
+    border: 2px solid #e5e7eb; 
+    border-radius: 12px; 
+    font-size: 1.15rem; 
+    background-color: #f9fafb; /* Fondo sutil para el input */
+    transition: all 0.2s ease; 
+}
+
+/* Efecto visual claro al tocar un input */
+input:focus { 
+    border-color: var(--primary); 
+    background-color: white;
+    outline: none; 
+    box-shadow: 0 0 0 4px var(--primary-light); 
+}
+
+/* Sistema de Grid para ahorrar espacio vertical */
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+.grid-2 input { margin-bottom: 20px; } /* Ajuste de margen para la grilla */
+
+button { 
+    width: 100%; 
+    padding: 16px; 
+    border: none; 
+    border-radius: 12px; /* Botones más redondeados */
+    font-size: 1.15rem; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: all 0.15s ease; 
+    margin-bottom: 12px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+button:active { transform: scale(0.96); } /* Efecto de "hundimiento" al tocar */
+
+.btn-primary { background-color: var(--primary); color: white; box-shadow: 0 4px 6px rgba(29, 78, 216, 0.2); }
+.btn-camara { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+.btn-success { background-color: var(--success); color: white; }
+.btn-danger { background-color: var(--danger); color: white; margin-top: 10px; }
+.btn-config { background: #e5e7eb; color: var(--text); width: auto; padding: 8px 16px; font-size: 0.9rem; margin: 0; border-radius: 8px; box-shadow: none; }
+
+.hidden { display: none !important; }
+
+/* Contador más llamativo */
+.scan-count { text-align: center; font-size: 3rem; font-weight: 800; color: var(--primary); margin: 5px 0 15px 0; line-height: 1; }
+
+.header-flex { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary-light); padding-bottom: 12px; margin-bottom: 20px; }
+.header-flex h2 { border: none; padding: 0; margin: 0; }
+
+#lector-qr { border-radius: 12px; overflow: hidden; border: 3px solid var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+/* Animación de destello verde para cuando se guarda un producto */
+@keyframes destelloExito {
+    0% { background-color: var(--success); }
+    100% { background-color: white; }
+}
+.exito-flash { animation: destelloExito 0.6s ease-out; }
+
+        
     </style>
 </head>
 <body>
