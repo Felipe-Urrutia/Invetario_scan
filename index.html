@@ -338,6 +338,18 @@ button:active { transform: scale(0.96); } /* Efecto de "hundimiento" al tocar */
     document.getElementById('inp-codigo').focus();
     
     actualizarContador();
+
+      // ... (tu código anterior de registrarProducto) ...
+    actualizarContador();
+
+    // Feedback visual: destello verde en la tarjeta de captura
+    const tarjetaCaptura = document.getElementById('pantalla-captura');
+    tarjetaCaptura.classList.remove('exito-flash'); // Por si el usuario escanea muy rápido
+    void tarjetaCaptura.offsetWidth; // Truco técnico para forzar a reiniciar la animación
+    tarjetaCaptura.classList.add('exito-flash');
+}
+
+
 }
 
 
