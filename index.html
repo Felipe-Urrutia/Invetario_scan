@@ -260,10 +260,12 @@ function sonidoError() {
 
     // --- FUNCIONES DE INTERFAZ ---
     function guardarConfiguracion() {
-        const fleje = document.getElementById('inp-fleje').value;
-        const seccion = document.getElementById('inp-seccion').value;
-        const posicion = document.getElementById('inp-posicion').value;
-
+       iniciarAudio(); // 🔊 Desbloquea el audio también al iniciar la app
+    
+       const fleje = document.getElementById('inp-fleje').value;
+       const seccion = document.getElementById('inp-seccion').value;
+       const posicion = document.getElementById('inp-posicion').value;
+        
         if (!fleje || !seccion || !posicion) {
             return alert("Por favor, completa los tres campos para iniciar el inventario.");
         }
@@ -293,17 +295,19 @@ function sonidoError() {
 
     // --- FUNCIONES DE LA CÁMARA (Librería html5-qrcode) ---
 function iniciarCamara() {
-        const divLector = document.getElementById('lector-qr');
-        divLector.classList.remove('hidden');
-        document.getElementById('btn-camara').classList.add('hidden');
+       iniciarAudio(); 
 
-        escanerActivo = new Html5Qrcode("lector-qr");
-        
-        const configCamara = { 
-            fps: 10, 
-            qrbox: { width: 250, height: 100 },
-            formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ]
-        };
+    const divLector = document.getElementById('lector-qr');
+    divLector.classList.remove('hidden');
+    document.getElementById('btn-camara').classList.add('hidden');
+
+    escanerActivo = new Html5Qrcode("lector-qr");
+    
+    const configCamara = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 100 },
+        formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ]
+    };
 
         escanerActivo.start({ facingMode: "environment" }, configCamara, 
             (textoDecodificado) => {
