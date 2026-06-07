@@ -194,9 +194,12 @@ const AudioContext = window.AudioContext || window.webkitAudioContext;
 let contextoAudio;
 
 function iniciarAudio() {
-    // Los navegadores requieren inicializar el audio después de una interacción del usuario
     if (!contextoAudio) {
-        contextoAudio = new AudioContext();
+        contextoAudio = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    // Si el contexto estaba pausado o suspendido por el navegador, lo obligamos a despertar
+    if (contextoAudio.state === 'suspended') {
+        contextoAudio.resume();
     }
 }
 
