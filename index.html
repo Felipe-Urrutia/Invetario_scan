@@ -289,23 +289,7 @@ function sonidoError() {
     }
 
     // --- FUNCIONES DE LA CÁMARA (Librería html5-qrcode) ---
-    function iniciarCamara() {
-
-
-    // ... dentro de iniciarCamara() ...
-    escanerActivo.start({ facingMode: "environment" }, configCamara, 
-        (textoDecodificado) => {
-            // Éxito: Se leyó un código de barras
-            sonidoEscaneo(); // 🔊 AGREGADO AQUÍ
-                        document.getElementById('inp-codigo').value = textoDecodificado;
-            esIngresoManual = false; 
-            
-            if(navigator.vibrate) navigator.vibrate(200);
-
-            detenerCamara();
-            document.getElementById('inp-cantidad').focus();
-        },
-
+function iniciarCamara() {
         const divLector = document.getElementById('lector-qr');
         divLector.classList.remove('hidden');
         document.getElementById('btn-camara').classList.add('hidden');
@@ -321,6 +305,7 @@ function sonidoError() {
         escanerActivo.start({ facingMode: "environment" }, configCamara, 
             (textoDecodificado) => {
                 // Éxito: Se leyó un código de barras
+                sonidoEscaneo(); // 🔊 Sonido incorporado correctamente
                 document.getElementById('inp-codigo').value = textoDecodificado;
                 esIngresoManual = false; // Indicador será '1'
                 
