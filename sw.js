@@ -1,5 +1,5 @@
 // Nombre del caché. Cambia el 'v1' por 'v2', 'v3', etc., si en el futuro haces modificaciones a tu app para forzar la actualización.
-const CACHE_NAME = 'inventario-offline-v5';
+const CACHE_NAME = 'inventario-offline-v6';
 
 // Lista exacta de TODOS los archivos que el celular debe guardar en su memoria interna.
 const ARCHIVOS_LOCALES = [
