@@ -356,10 +356,19 @@ function iniciarCamara() {
     escanerActivo = new Html5Qrcode("lector-qr");
     
     const configCamara = { 
-        fps: 10, 
-        qrbox: { width: 250, height: 100 },
-        formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8 ]
-    };
+    fps: 15, // Subimos de 10 a 15 cuadros por segundo para que procese más rápido
+    qrbox: function(viewfinderWidth, viewfinderHeight) {
+        // Hace que el recuadro sea dinámico: toma el 80% del ancho del celular
+        // y una altura ideal para capturar un código de barras alargado (EAN-13)
+        let width = Math.floor(viewfinderWidth * 0.8);
+        let height = Math.floor(width * 0.4); 
+        return { width: width, height: height };
+    },
+    formatsToSupport: [ 
+        Html5QrcodeSupportedFormats.EAN_13, 
+        Html5QrcodeSupportedFormats.EAN_8 
+    ]
+};
 
         escanerActivo.start({ facingMode: "environment" }, configCamara, 
             (textoDecodificado) => {
