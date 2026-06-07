@@ -189,6 +189,53 @@ button:active { transform: scale(0.96); } /* Efecto de "hundimiento" al tocar */
     let esIngresoManual = true; 
     let escanerActivo = null;
 
+// --- MOTOR DE SONIDO (Web Audio API) ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let contextoAudio;
+
+function iniciarAudio() {
+    // Los navegadores requieren inicializar el audio después de una interacción del usuario
+    if (!contextoAudio) {
+        contextoAudio = new AudioContext();
+    }
+}
+
+function reproducirTono(frecuencia, tipo, duracion, volumen = 0.1) {
+    iniciarAudio();
+    const oscilador = contextoAudio.createOscillator();
+    const ganancia = contextoAudio.createGain();
+
+    oscilador.type = tipo; // 'sine' (suave), 'square' (robótico), 'sawtooth' (agresivo/zumbido)
+    oscilador.frequency.value = frecuencia;
+
+    // Efecto de desvanecimiento para que no suene cortado de golpe
+    ganancia.gain.setValueAtTime(volumen, contextoAudio.currentTime);
+    ganancia.gain.exponentialRampToValueAtTime(0.00001, contextoAudio.currentTime + duracion);
+
+    oscilador.connect(ganancia);
+    ganancia.connect(contextoAudio.destination);
+
+    oscilador.start();
+    oscilador.stop(contextoAudio.currentTime + duracion);
+}
+
+// 🔊 Sonidos Específicos
+function sonidoEscaneo() {
+    // Pitido láser clásico (agudo y cortísimo)
+    reproducirTono(1500, 'sine', 0.1, 0.2);
+}
+
+function sonidoExito() {
+    // Campanilla de confirmación (dos tonos suaves ascendentes)
+    reproducirTono(600, 'sine', 0.1, 0.1);
+    setTimeout(() => reproducirTono(900, 'sine', 0.15, 0.1), 100);
+}
+
+function sonidoError() {
+    // Zumbido grave de error
+    reproducirTono(200, 'sawtooth', 0.4, 0.15);
+}
+
     // Inicialización al cargar la página
     window.onload = () => {
         // Registrar el Service Worker para funcionamiento offline
@@ -243,6 +290,22 @@ button:active { transform: scale(0.96); } /* Efecto de "hundimiento" al tocar */
 
     // --- FUNCIONES DE LA CÁMARA (Librería html5-qrcode) ---
     function iniciarCamara() {
+
+
+    // ... dentro de iniciarCamara() ...
+    escanerActivo.start({ facingMode: "environment" }, configCamara, 
+        (textoDecodificado) => {
+            // Éxito: Se leyó un código de barras
+            sonidoEscaneo(); // 🔊 AGREGADO AQUÍ
+                        document.getElementById('inp-codigo').value = textoDecodificado;
+            esIngresoManual = false; 
+            
+            if(navigator.vibrate) navigator.vibrate(200);
+
+            detenerCamara();
+            document.getElementById('inp-cantidad').focus();
+        },
+
         const divLector = document.getElementById('lector-qr');
         divLector.classList.remove('hidden');
         document.getElementById('btn-camara').classList.add('hidden');
@@ -300,29 +363,27 @@ button:active { transform: scale(0.96); } /* Efecto de "hundimiento" al tocar */
         return `${corrF}${indicadorF}${prodF}${cantF}${flejeF}${seccionF}${posF}${sufijoSistema}`;
     }
 
-    function registrarProducto() {
-        const codigo = document.getElementById('inp-codigo').value;
-        const cantidad = document.getElementById('inp-cantidad').value;
+function registrarProducto() {
+    const codigo = document.getElementById('inp-codigo').value;
+    const cantidad = document.getElementById('inp-cantidad').value;
 
-    // 1. Validar que no estén vacíos
-     if (!codigo || !cantidad) {
+    if (!codigo || !cantidad) {
+        sonidoError(); // 🔊 SONIDO DE ERROR
         return alert("Falta ingresar el código o la cantidad.");
-     }
+    }
 
-    // 2. Validar que la cantidad no sea negativa ni cero
-    // Usamos parseFloat para asegurarnos de que evalúa el valor matemático, no como texto
-     if (parseFloat(cantidad) <= 0) {
+    if (parseFloat(cantidad) <= 0) {
+        sonidoError(); // 🔊 SONIDO DE ERROR
         document.getElementById('inp-cantidad').focus();
         return alert("Error: La cantidad o peso debe ser mayor a cero.");
-     }
+    }
 
-    // 3. Validar que el código no sea negativo
-     if (parseFloat(codigo) <= 0) {
+    if (parseFloat(codigo) <= 0) {
+        sonidoError(); // 🔊 SONIDO DE ERROR
         document.getElementById('inp-codigo').focus();
         return alert("Error: El código del producto no puede ser negativo.");
-     }
+    }
 
-    // Si pasa todas las validaciones, generamos la trama
     const trama = generarTramaExacta(correlativo, codigo, cantidad, esIngresoManual);
     
     listaEscaneos.push(trama);
@@ -339,19 +400,13 @@ button:active { transform: scale(0.96); } /* Efecto de "hundimiento" al tocar */
     
     actualizarContador();
 
-      // ... (tu código anterior de registrarProducto) ...
-    actualizarContador();
-
-    // Feedback visual: destello verde en la tarjeta de captura
+    // 🔊 SONIDO DE ÉXITO Y FEEDBACK VISUAL
+    sonidoExito();
     const tarjetaCaptura = document.getElementById('pantalla-captura');
-    tarjetaCaptura.classList.remove('exito-flash'); // Por si el usuario escanea muy rápido
-    void tarjetaCaptura.offsetWidth; // Truco técnico para forzar a reiniciar la animación
+    tarjetaCaptura.classList.remove('exito-flash');
+    void tarjetaCaptura.offsetWidth; 
     tarjetaCaptura.classList.add('exito-flash');
 }
-
-
-}
-
 
     function actualizarContador() {
         document.getElementById('contador-escaneos').innerText = listaEscaneos.length;
