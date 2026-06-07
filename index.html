@@ -428,13 +428,13 @@ function registrarProducto() {
     if (parseFloat(cantidad) <= 0) {
         sonidoError(); // 🔊 SONIDO DE ERROR
         document.getElementById('inp-cantidad').focus();
-        return alert("Error: La cantidad o peso debe ser mayor a cero.");
+        return lanzarAlerta("Error: La cantidad o peso debe ser mayor a cero.");
     }
 
     if (parseFloat(codigo) <= 0) {
         sonidoError(); // 🔊 SONIDO DE ERROR
         document.getElementById('inp-codigo').focus();
-        return alert("Error: El código del producto no puede ser negativo.");
+        return lanzarAlerta("Error: El código del producto no puede ser negativo.");
     }
 
     const trama = generarTramaExacta(correlativo, codigo, cantidad, esIngresoManual);
